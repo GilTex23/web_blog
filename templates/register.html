@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+
+{% block title %}Регистрация - Учебный Блог{% endblock %}
+
+{% block content %}
+<div class="max-w-md mx-auto">
+    <div class="bg-white rounded-lg shadow-md p-8">
+        <div class="text-center mb-6">
+            <h2 class="text-2xl font-bold text-gray-800">Регистрация</h2>
+            <p class="text-gray-600">Создайте новый аккаунт</p>
+        </div>
+
+        <form method="POST">
+            <div class="mb-4">
+                <label for="username" class="block text-gray-800 font-medium mb-2">Имя пользователя</label>
+                <input type="text" id="username" name="username"
+                       class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                       required minlength="3" maxlength="20" pattern="[a-zA-Zа-яА-Я0-9_.-]+"
+                       title="Разрешены только буквы, цифры, подчеркивание, дефис и точка">
+            </div>
+            <div class="mb-4">
+                <label for="password" class="block text-gray-800 font-medium mb-2">Пароль</label>
+                <input type="password" id="password" name="password"
+                       class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                       required minlength="6">
+            </div>
+            <div class="mb-6">
+                <label for="confirm_password" class="block text-gray-800 font-medium mb-2">Подтвердите пароль</label>
+                <input type="password" id="confirm_password" name="confirm_password" 
+                       class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                       required minlength="6">
+            </div>
+            <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-md transition duration-200">
+                Зарегистрироваться
+            </button>
+        </form>
+        
+        <div class="mt-4 text-center">
+            <p class="text-sm text-gray-600">
+                Уже есть аккаунт? <a href="{{ url_for('login') }}" class="text-blue-600 hover:text-blue-800 font-medium">Войти</a>
+            </p>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Учебный Блог{% endblock %}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#3b82f6',
+                        'primary-hover': '#2563eb',
+                        success: '#10b981',
+                        warning: '#f59e0b',
+                        error: '#ef4444',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .prose {
+            max-width: none;
+        }
+        .prose p {
+            margin-bottom: 1rem;
+        }
+        .prose ul {
+            margin-left: 1.5rem;
+            margin-bottom: 1rem;
+        }
+        .prose li {
+            margin-bottom: 0.5rem;
+        }
+        .prose pre {
+            background-color: #f3f4f6;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            overflow-x: auto;
+            /* Уменьшаем расстояние между строками */
+            line-height: 1.1;
+            font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+            font-size: 0.95rem;
+        }
+        .prose code {
+            font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+            background-color: #f3f4f6;
+            padding: 0.2rem 0.4rem;
+            border-radius: 0.25rem;
+            font-size: 0.95rem;
+        }
+        .prose pre code {
+            background-color: transparent;
+            padding: 0;
+            border-radius: 0;
+            font-size: 0.95rem;
+            line-height: 1.1;
+        }
+        .prose pre code::before,
+        .prose pre code::after {
+            content: none;
+        }
+        .prose pre * {
+            line-height: 1.1 !important;
+        }
+
+        /* Улучшенные кнопки */
+        .btn-primary {
+            background-color: #3b82f6;
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 0.375rem;
+            font-weight: 600;
+            transition: all 0.2s ease-in-out;
+            border: none;
+            cursor: pointer;
+        }
+        .btn-primary:hover {
+            background-color: #2563eb;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+        .btn-secondary {
+            background-color: #64748b;
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 0.375rem;
+            font-weight: 600;
+            transition: all 0.2s ease-in-out;
+            border: none;
+            cursor: pointer;
+        }
+        .btn-secondary:hover {
+            background-color: #475569;
+            transform: translateY(-1px);
+        }
+        /* Файл инпут */
+        .file-input {
+            display: none;
+        }
+        .file-label {
+            background-color: #eff6ff;
+            color: #2563eb;
+            padding: 0.5rem 1rem;
+            border-radius: 9999px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        .file-label:hover {
+            background-color: #dbeafe;
+        }
+        /* Цветные круги для аватаров */
+        .avatar-circle {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: white;
+            font-size: 18px;
+        }
+        .avatar-blue { background-color: #3b82f6; }
+        .avatar-green { background-color: #10b981; }
+        .avatar-purple { background-color: #8b5cf6; }
+        .avatar-gray { background-color: #6b7280; }
+        .avatar-orange { background-color: #f59e0b; }
+        .avatar-red { background-color: #ef4444; }
+        .avatar-pink { background-color: #ec4899; }
+        .avatar-indigo { background-color: #60a5fa; }
+        .avatar-yellow { background-color: #eab308; }
+        .avatar-cyan { background-color: #06b6d4; }
+
+        /* Генерация цвета по первой букве */
+        .avatar-A, .avatar-B, .avatar-C, .avatar-D, .avatar-E, .avatar-F, .avatar-G, .avatar-H, .avatar-I, .avatar-J { background-color: #3b82f6; }
+        .avatar-K, .avatar-L, .avatar-M, .avatar-N, .avatar-O, .avatar-P, .avatar-Q, .avatar-R, .avatar-S, .avatar-T { background-color: #10b981; }
+        .avatar-U, .avatar-V, .avatar-W, .avatar-X, .avatar-Y, .avatar-Z { background-color: #8b5cf6; }
+        .avatar-0, .avatar-1, .avatar-2, .avatar-3, .avatar-4, .avatar-5, .avatar-6, .avatar-7, .avatar-8, .avatar-9 { background-color: #6b7280; }
+        .avatar-default { background-color: #6b7280; }
+
+        /* Сообщения */
+        .alert {
+            padding: 1rem;
+            border-radius: 0.375rem;
+            margin-bottom: 1rem;
+            font-weight: 500;
+        }
+        .alert-success {
+            background-color: #d1fae5;
+            border: 1px solid #10b981;
+            color: #059669;
+        }
+        .alert-error {
+            background-color: #fee2e2;
+            border: 1px solid #ef4444;
+            color: #dc2626;
+        }
+        .alert-warning {
+            background-color: #fef3c7;
+            border: 1px solid #f59e0b;
+            color: #d97706;
+        }
+
+        /* Подсказки для кнопок */
+        .tooltip {
+            position: relative;
+            display: inline-block;
+        }
+
+        .tooltip .tooltiptext {
+            visibility: hidden;
+            width: 120px;
+            background-color: black;
+            color: #fff;
+            text-align: center;
+            border-radius: 6px;
+            padding: 5px 0;
+            position: absolute;
+            z-index: 1;
+            bottom: 125%;
+            left: 50%;
+            margin-left: -60px;
+            opacity: 0;
+            transition: opacity 0.3s;
+            font-size: 0.85rem;
+            white-space: nowrap;
+        }
+
+        .tooltip:hover .tooltiptext {
+            visibility: visible;
+            opacity: 1;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <!-- Navigation -->
+    <nav class="bg-white shadow-sm border-b">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center">
+                    <a href="{{ url_for('index') }}" class="text-xl font-bold text-blue-600 hover:text-blue-800">Учебный Блог</a>
+                </div>
+                <div class="flex items-center space-x-4">
+                    {% if session.username %}
+                        <div class="flex items-center space-x-2">
+                            {% if session.avatar and session.avatar != 'default.png' %}
+                                <img src="{{ url_for('static', filename='avatars/' + session.avatar) }}"
+                                     alt="Аватар"
+                                     class="w-8 h-8 rounded-full object-cover">
+                            {% else %}
+                                <div class="avatar-circle avatar-{{ session.username|first|upper }} w-8 h-8 flex items-center justify-center text-sm">
+                                    {{ session.username|first|upper }}
+                                </div>
+                            {% endif %}
+                            <span class="hidden md:inline text-gray-700 font-medium">{{ session.username }}</span>
+                        </div>
+                        <a href="{{ url_for('profile') }}" class="text-gray-600 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium">
+                            <i class="fas fa-user-cog"></i>
+                        </a>
+                        <a href="{{ url_for('logout') }}" class="text-gray-600 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium">
+                            <i class="fas fa-sign-out-alt"></i>
+                        </a>
+                        <a href="{{ url_for('new_post') }}" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium transition duration-200">
+                            <i class="fas fa-plus"></i> Новый пост
+                        </a>
+                    {% else %}
+                        <a href="{{ url_for('register') }}" class="text-gray-600 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium">
+                            <i class="fas fa-user-plus"></i> Регистрация
+                        </a>
+                        <a href="{{ url_for('login') }}" class="text-gray-600 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium">
+                            <i class="fas fa-user"></i> Вход
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <main class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div class="mb-6">
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ category }}">
+                            {{ message }}
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+
+        {% block content %}{% endblock %}
+    </main>
+</body>
+</html>

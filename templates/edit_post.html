@@ -1,0 +1,175 @@
+{% extends "base.html" %}
+
+{% block title %}Редактировать пост - Учебный Блог{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto">
+    <div class="bg-white rounded-lg shadow-md p-8">
+        <div class="mb-6">
+            <a href="{{ url_for('post_detail', post_id=post.id) }}" class="text-blue-600 hover:text-blue-800 font-medium flex items-center">
+                <i class="fas fa-arrow-left mr-2"></i> Вернуться к посту
+            </a>
+        </div>
+        
+        <h2 class="text-2xl font-bold text-gray-800 mb-6">Редактировать пост</h2>
+        
+        <form method="POST">
+            <div class="mb-6">
+                <label for="title" class="block text-gray-800 font-medium mb-2">Заголовок</label>
+                <input type="text" id="title" name="title" 
+                       class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                       value="{{ post.title }}" required>
+            </div>
+            <div class="mb-6">
+                <label for="content" class="block text-gray-800 font-medium mb-2">Содержание</label>
+                
+                <!-- Форматирование текста -->
+                <div class="mb-3 flex space-x-2">
+                    <button type="button" onclick="applyFormat('bold')" class="bg-gray-200 hover:bg-gray-300 px-3 py-1 rounded-md text-sm" title="Жирный текст (Ctrl+B)">
+                        <i class="fas fa-bold"></i>
+                    </button>
+                    <button type="button" onclick="applyFormat('italic')" class="bg-gray-200 hover:bg-gray-300 px-3 py-1 rounded-md text-sm" title="Курсивный текст (Ctrl+I)">
+                        <i class="fas fa-italic"></i>
+                    </button>
+                    <button type="button" onclick="applyFormat('underline')" class="bg-gray-200 hover:bg-gray-300 px-3 py-1 rounded-md text-sm" title="Подчеркнутый текст (Ctrl+U)">
+                        <i class="fas fa-underline"></i>
+                    </button>
+                    <button type="button" onclick="applyFormat('heading')" class="bg-gray-200 hover:bg-gray-300 px-3 py-1 rounded-md text-sm" title="Заголовок H1">
+                        H1
+                    </button>
+                    <button type="button" onclick="applyFormat('paragraph')" class="bg-gray-200 hover:bg-gray-300 px-3 py-1 rounded-md text-sm" title="Обычный текст">
+                        P
+                    </button>
+                    <button type="button" onclick="applyFormat('list')" class="bg-gray-200 hover:bg-gray-300 px-3 py-1 rounded-md text-sm" title="Маркированный список">
+                        <i class="fas fa-list-ul"></i>
+                    </button>
+                    <button type="button" onclick="applyFormat('quote')" class="bg-gray-200 hover:bg-gray-300 px-3 py-1 rounded-md text-sm" title="Цитата">
+                        <i class="fas fa-quote-left"></i>
+                    </button>
+                    <button type="button" onclick="applyFormat('code')" class="bg-gray-200 hover:bg-gray-300 px-3 py-1 rounded-md text-sm" title="Блок кода">
+                        <i class="fab fa-codepen"></i>
+                    </button>
+                </div>
+                
+                <textarea id="content" name="content" 
+                          class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent h-64"
+                          required>{{ post.content }}</textarea>
+            </div>
+            <div class="flex justify-between">
+                <a href="{{ url_for('post_detail', post_id=post.id) }}" class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-6 rounded-md transition duration-200">
+                    Отмена
+                </a>
+                <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-md transition duration-200">
+                    Сохранить изменения
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+function applyFormat(formatType) {
+    const textarea = document.getElementById('content');
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const selectedText = textarea.value.substring(start, end);
+    
+    let formattedText = '';
+    
+    switch(formatType) {
+        case 'bold':
+            formattedText = `<strong>${selectedText}</strong>`;
+            break;
+        case 'italic':
+            formattedText = `<em>${selectedText}</em>`;
+            break;
+        case 'underline':
+            formattedText = `<u>${selectedText}</u>`;
+            break;
+        case 'heading':
+            formattedText = `<h1>${selectedText}</h1>`;
+            break;
+        case 'paragraph':
+            formattedText = `<p>${selectedText}</p>`;
+            break;
+        case 'list':
+            if (selectedText === '') {
+                formattedText = `<ul><li>Элемент списка 1</li><li>Элемент списка 2</li></ul>`;
+            } else {
+                // Разбиваем текст по переносам строк для создания списка
+                const lines = selectedText.split('\n').filter(line => line.trim() !== '');
+                if (lines.length > 0) {
+                    formattedText = '<ul>';
+                    lines.forEach(line => {
+                        formattedText += `<li>${line}</li>`;
+                    });
+                    formattedText += '</ul>';
+                } else {
+                    formattedText = `<ul><li>${selectedText}</li></ul>`;
+                }
+            }
+            break;
+        case 'quote':
+            formattedText = `<blockquote>${selectedText}</blockquote>`;
+            break;
+        case 'code':
+            // Экранируем HTML-разметку внутри кода по таблице
+            const escapedText = escapeCodeHtml(selectedText);
+            if (escapedText === '') {
+                formattedText = `<pre><code>Ваш код здесь</code></pre>`;
+            } else {
+                formattedText = `<pre><code>${escapedText}</code></pre>`;
+            }
+            break;
+    }
+
+    // Если ничего не выбрано, добавляем форматирование вокруг курсора
+    if (selectedText === '') {
+        switch(formatType) {
+            case 'bold':
+                formattedText = '<strong></strong>';
+                break;
+            case 'italic':
+                formattedText = '<em></em>';
+                break;
+            case 'underline':
+                formattedText = '<u></u>';
+                break;
+            case 'heading':
+                formattedText = '<h1></h1>';
+                break;
+            case 'paragraph':
+                formattedText = '<p></p>';
+                break;
+            case 'list':
+                formattedText = '<ul><li></li></ul>';
+                break;
+            case 'quote':
+                formattedText = '<blockquote></blockquote>';
+                break;
+            case 'code':
+                formattedText = '<pre><code></code></pre>';
+                break;
+        }
+    }
+
+    // Вставляем отформатированный текст
+    textarea.value = textarea.value.substring(0, start) + formattedText + textarea.value.substring(end);
+
+    // Устанавливаем курсор после вставленного текста
+    const cursorPos = start + formattedText.length;
+    textarea.selectionStart = cursorPos;
+    textarea.selectionEnd = cursorPos;
+    textarea.focus();
+}
+
+function escapeCodeHtml(text) {
+    if (!text) return '';
+    return text
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+}
+</script>
+{% endblock %}

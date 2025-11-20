@@ -416,6 +416,6 @@ def add_comment(post_id):
     return redirect(url_for('post_detail', post_id=post_id))
 
 
-if __name__ == '__main__':
-    init_db()
-    app.run(debug=True)
+# if __name__ == '__main__':
+#     init_db()
+#     app.run(debug=True)

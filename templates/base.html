@@ -124,6 +124,7 @@
             font-weight: bold;
             color: white;
             font-size: 18px;
+            background-color: #6b7280;
         }
         .avatar-blue { background-color: #3b82f6; }
         .avatar-green { background-color: #10b981; }
@@ -136,12 +137,35 @@
         .avatar-yellow { background-color: #eab308; }
         .avatar-cyan { background-color: #06b6d4; }
 
-        /* Генерация цвета по первой букве */
-        .avatar-A, .avatar-B, .avatar-C, .avatar-D, .avatar-E, .avatar-F, .avatar-G, .avatar-H, .avatar-I, .avatar-J { background-color: #3b82f6; }
-        .avatar-K, .avatar-L, .avatar-M, .avatar-N, .avatar-O, .avatar-P, .avatar-Q, .avatar-R, .avatar-S, .avatar-T { background-color: #10b981; }
-        .avatar-U, .avatar-V, .avatar-W, .avatar-X, .avatar-Y, .avatar-Z { background-color: #8b5cf6; }
-        .avatar-0, .avatar-1, .avatar-2, .avatar-3, .avatar-4, .avatar-5, .avatar-6, .avatar-7, .avatar-8, .avatar-9 { background-color: #6b7280; }
-        .avatar-default { background-color: #6b7280; }
+        /* Латиница A–Z */
+        .avatar-A, .avatar-B, .avatar-C { background-color: #ef4444; } /* red-500 */
+        .avatar-D, .avatar-E, .avatar-F { background-color: #f97316; } /* orange-500 */
+        .avatar-G, .avatar-H, .avatar-I { background-color: #eab308; } /* yellow-500 */
+        .avatar-J, .avatar-K, .avatar-L { background-color: #22c55e; } /* green-500 */
+        .avatar-M, .avatar-N, .avatar-O { background-color: #14b8a6; } /* teal-500 */
+        .avatar-P, .avatar-Q, .avatar-R { background-color: #3b82f6; } /* blue-500 */
+        .avatar-S, .avatar-T, .avatar-U { background-color: #8b5cf6; } /* violet-500 */
+        .avatar-V, .avatar-W, .avatar-X { background-color: #ec4899; } /* pink-500 */
+        .avatar-Y, .avatar-Z { background-color: #f43f5e; }           /* rose-500 */
+
+        /* Цифры 0–9 */
+        .avatar-0, .avatar-1, .avatar-2 { background-color: #6b7280; }
+        .avatar-3, .avatar-4, .avatar-5 { background-color: #4b5563; }
+        .avatar-6, .avatar-7, .avatar-8, .avatar-9 { background-color: #374151; }
+
+        /* Русская азбука А–Я (кириллица) */
+        .avatar-А, .avatar-Б, .avatar-В { background-color: #ef4444; }
+        .avatar-Г, .avatar-Д, .avatar-Е, .avatar-Ё { background-color: #ec4899; }
+        .avatar-Ж, .avatar-З, .avatar-И { background-color: #8b5cf6; }
+        .avatar-Й, .avatar-К, .avatar-Л { background-color: #3b82f6; }
+        .avatar-М, .avatar-Н, .avatar-О { background-color: #14b8a6; }
+        .avatar-П, .avatar-Р, .avatar-С { background-color: #22c55e; }
+        .avatar-Т, .avatar-У, .avatar-Ф { background-color: #eab308; }
+        .avatar-Х, .avatar-Ц, .avatar-Ч { background-color: #f97316; }
+        .avatar-Ш, .avatar-Щ, .avatar-Ъ, .avatar-Ы, .avatar-Ь, .avatar-Э, .avatar-Ю, .avatar-Я { background-color: #ef4444; }
+
+        /* Fallback для любых других символов: дефис, подчёркивание, спецсимволы и т.д. */
+        .avatar-default { background-color: #4b5563; }
 
         /* Сообщения */
         .alert {

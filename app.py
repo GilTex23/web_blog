@@ -1,6 +1,5 @@
-from flask import Flask, render_template, request, redirect, url_for, session, jsonify, flash
+from flask import Flask, render_template, request, redirect, url_for, session, flash
 from werkzeug.security import check_password_hash, generate_password_hash
-from werkzeug.utils import secure_filename
 from database import init_db, get_db_connection
 from config import Config
 import sqlite3
@@ -10,9 +9,8 @@ from datetime import datetime, timezone, timedelta
 app = Flask(__name__)
 app.config.from_object(Config)
 app.config['UPLOAD_FOLDER'] = os.path.join(os.path.dirname(__file__), 'static', 'avatars')
-app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
+app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
 
-# Создаем папку для аватаров если не существует
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
 
@@ -35,8 +33,8 @@ def is_valid_username(username):
     if not username or len(username) < 3:
         return False
 
-    # Разрешены: буквы, цифры, подчеркивание, дефис, точка
-    allowed_chars = set('abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_-.')
+    allowed_chars = set(
+        'абвгдеёжзийклмнопрстуфхцчшщъыьэюяАБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯabcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_-.')
 
     for char in username:
         if char not in allowed_chars:
@@ -50,7 +48,6 @@ def format_datetime(dt_str, timezone_offset=3):
     try:
         dt = datetime.fromisoformat(dt_str.replace('T', ' '))
 
-        # Применяем смещение часового пояса
         dt = dt + timedelta(hours=timezone_offset)
 
         return dt.strftime('%d %B %Y, %H:%M')
@@ -69,7 +66,6 @@ def escape_code_html(text):
             .replace('"', '&quot;'))
 
 
-
 @app.route('/')
 def index():
     """Главная страница со списком постов"""
@@ -82,14 +78,12 @@ def index():
             ORDER BY p.created_at DESC
         ''').fetchall()
 
-        # Добавляем отформатированную дату
         formatted_posts = []
         for post in posts:
             post_dict = dict(post)
             post_dict['formatted_date'] = format_datetime(post['created_at'], post['timezone_offset'])
             post_dict['first_letter'] = get_first_letter(post['author_name'])
 
-            # Если пост был отредактирован, добавляем информацию о редактировании
             if post['updated_at']:
                 post_dict['edited_info'] = {
                     'formatted_date': format_datetime(post['updated_at'], post['timezone_offset']),
@@ -127,13 +121,11 @@ def post_detail(post_id):
             ORDER BY c.created_at DESC
         ''', (post_id,)).fetchall()
 
-        # Форматируем данные
         if post:
             post_dict = dict(post)
             post_dict['formatted_date'] = format_datetime(post['created_at'], post['timezone_offset'])
             post_dict['first_letter'] = get_first_letter(post['author_name'])
 
-            # Если пост был отредактирован, добавляем информацию о редактировании
             if post['updated_at']:
                 post_dict['edited_info'] = {
                     'formatted_date': format_datetime(post['updated_at'], post['timezone_offset']),
@@ -142,11 +134,10 @@ def post_detail(post_id):
             else:
                 post_dict['edited_info'] = {'is_edited': False}
 
-            # Форматируем комментарии
             formatted_comments = []
             for comment in comments:
                 comment_dict = dict(comment)
-                # Правильный способ получения timezone_offset из sqlite3.Row
+
                 timezone_offset = comment['timezone_offset'] if comment['timezone_offset'] is not None else 3
                 comment_dict['formatted_date'] = format_datetime(comment['created_at'], timezone_offset)
                 comment_dict['first_letter'] = get_first_letter(comment['author_name'])
@@ -204,7 +195,6 @@ def register():
             flash('Пароль должен содержать минимум 6 символов', 'error')
             return render_template('register.html')
 
-        # Проверка на допустимые символы в нике
         if not is_valid_username(username):
             flash('Имя пользователя содержит недопустимые символы. Разрешены только буквы, цифры, _, - и .', 'error')
             return render_template('register.html')
@@ -220,7 +210,7 @@ def register():
 
         password_hash = generate_password_hash(password)
         conn.execute('INSERT INTO users (username, password_hash, timezone_offset) VALUES (?, ?, ?)',
-                     (username, password_hash, 3))  # По умолчанию UTC+3
+                     (username, password_hash, 3))
         conn.commit()
         conn.close()
 
@@ -252,14 +242,12 @@ def profile():
                     filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
                     file.save(filepath)
 
-                    # Обновляем аватар в базе данных
                     conn = get_db_connection()
                     conn.execute('UPDATE users SET avatar = ? WHERE id = ?',
                                  (filename, session['user_id']))
                     conn.commit()
                     conn.close()
 
-                    # Обновляем сессию
                     session['avatar'] = filename
                     flash('Аватар успешно загружен!', 'success')
                     return redirect(url_for('profile'))
@@ -267,31 +255,29 @@ def profile():
                     flash('Недопустимый формат файла. Разрешены: png, jpg, jpeg, gif', 'error')
 
         elif 'remove_avatar' in request.form:
-            # Удаляем аватар
+
             conn = get_db_connection()
             conn.execute('UPDATE users SET avatar = ? WHERE id = ?', ('default.png', session['user_id']))
             conn.commit()
             conn.close()
 
-            # Обновляем сессию
             session['avatar'] = 'default.png'
             flash('Аватар успешно удален!', 'success')
             return redirect(url_for('profile'))
 
         elif 'delete_account' in request.form:
-            # Удаляем аккаунт
+
             conn = get_db_connection()
             conn.execute('DELETE FROM users WHERE id = ?', (session['user_id'],))
             conn.commit()
             conn.close()
 
-            # Очищаем сессию
             session.clear()
             flash('Аккаунт успешно удален!', 'success')
             return redirect(url_for('index'))
 
         elif 'timezone_offset' in request.form:
-            # Обновляем часовой пояс
+
             timezone_offset = int(request.form['timezone_offset'])
             conn = get_db_connection()
             conn.execute('UPDATE users SET timezone_offset = ? WHERE id = ?',
@@ -299,7 +285,6 @@ def profile():
             conn.commit()
             conn.close()
 
-            # Обновляем сессию
             session['timezone_offset'] = timezone_offset
             flash('Часовой пояс успешно обновлен!', 'success')
             return redirect(url_for('profile'))
@@ -361,7 +346,6 @@ def edit_post(post_id):
             flash('Заголовок и содержание не могут быть пустыми', 'error')
             return render_template('edit_post.html', post=post)
 
-        # Обновляем пост
         conn.execute('''UPDATE posts 
                        SET title = ?, content = ?, updated_at = CURRENT_TIMESTAMP 
                        WHERE id = ?''',

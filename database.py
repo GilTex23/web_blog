@@ -1,5 +1,4 @@
 import sqlite3
-import os
 from werkzeug.security import generate_password_hash
 from config import Config
 
@@ -9,7 +8,6 @@ def init_db():
     conn = sqlite3.connect(Config.DATABASE_PATH)
     cursor = conn.cursor()
 
-    # Создание таблицы пользователей (с полем avatar и timezone_offset)
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS users (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -20,7 +18,6 @@ def init_db():
         )
     ''')
 
-    # Создание таблицы постов (добавлено поле updated_at)
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS posts (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -33,7 +30,6 @@ def init_db():
         )
     ''')
 
-    # Создание таблицы комментариев
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS comments (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -45,7 +41,6 @@ def init_db():
         )
     ''')
 
-    # Создание администратора по умолчанию
     cursor.execute("SELECT * FROM users WHERE username = 'admin'")
     if not cursor.fetchone():
         admin_pass = generate_password_hash('admin123')

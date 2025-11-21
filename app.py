@@ -10,6 +10,8 @@ import secrets
 from flask_mail import Mail, Message
 from email_validator import validate_email, EmailNotValidError
 from dotenv import load_dotenv
+from sendgrid import SendGridAPIClient
+from sendgrid.helpers.mail import Mail as SendGridMail
 
 load_dotenv()
 
@@ -25,20 +27,6 @@ app.config['MAIL_USE_SSL'] = os.environ.get('MAIL_USE_SSL', 'false').lower() == 
 app.config['MAIL_USERNAME'] = os.environ.get('MAIL_USERNAME')
 app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_PASSWORD')
 app.config['MAIL_DEFAULT_SENDER'] = os.environ.get('MAIL_DEFAULT_SENDER')
-
-print("[DEBUG] SMTP Configuration:")
-print(f"  MAIL_SERVER = {app.config.get('MAIL_SERVER')}")
-print(f"  MAIL_PORT = {app.config.get('MAIL_PORT')}")
-print(f"  MAIL_USE_TLS = {app.config.get('MAIL_USE_TLS')}")
-print(f"  MAIL_USE_SSL = {app.config.get('MAIL_USE_SSL')}")
-print(f"  MAIL_USERNAME = {app.config.get('MAIL_USERNAME')}")
-print(f"  MAIL_DEFAULT_SENDER = {app.config.get('MAIL_DEFAULT_SENDER')}")
-
-required_mail_vars = ['MAIL_SERVER', 'MAIL_PORT', 'MAIL_USERNAME', 'MAIL_PASSWORD']
-missing = [var for var in required_mail_vars if not os.environ.get(var)]
-if missing:
-    print(f"[WARN] Отсутствуют переменные окружения для почты: {', '.join(missing)}")
-    print("[INFO] Отправка e-mail будет недоступна.")
 
 mail = Mail(app)
 
@@ -101,17 +89,36 @@ def escape_code_html(text):
 
 def send_verification_email(email, token):
     verify_url = url_for('verify_email', token=token, _external=True)
+    html_content = render_template('email/verify.html', verify_url=verify_url)
+    subject = "📧 Подтвердите e-mail — Учебный Блог"
 
-    html_body = render_template('email/verify.html', verify_url=verify_url)
-    txt_body = f"Подтвердите регистрацию: {verify_url}"
+    backend = os.environ.get('EMAIL_BACKEND', 'email_api').lower()
 
-    msg = Message(
-        subject="📧 Подтвердите e-mail — Учебный Блог",
-        recipients=[email],
-        html=html_body,
-        body=txt_body
-    )
-    mail.send(msg)
+    if backend == 'smtp':
+
+        msg = Message(
+            subject=subject,
+            recipients=[email],
+            html=html_content,
+            body=f"Подтвердите регистрацию: {verify_url}"
+        )
+        mail.send(msg)
+        print("[EMAIL] Отправлено через SMTP")
+
+    elif backend == 'email_api':
+
+        message = SendGridMail(
+            from_email=os.environ.get('MAIL_DEFAULT_SENDER'),
+            to_emails=email,
+            subject=subject,
+            html_content=html_content
+        )
+        sg = SendGridAPIClient(os.environ.get('SENDGRID_API_KEY'))
+        response = sg.send(message)
+        print(f"[EMAIL] Отправлено через SendGrid API: {response.status_code}")
+
+    else:
+        raise ValueError(f"Неизвестный EMAIL_BACKEND: {backend}")
 
 
 @app.route('/')
@@ -472,16 +479,30 @@ def forgot_password():
             conn.commit()
 
             reset_url = url_for('reset_password', token=token, _external=True)
-            msg = Message(
-                subject="Сброс пароля — Учебный Блог",
-                recipients=[user['email']],
-                html=render_template('email/reset_password.html', reset_url=reset_url),
-                body=f"Сбросить пароль: {reset_url}"
-            )
-            try:
-                mail.send(msg)
-            except Exception as e:
-                print(f"[EMAIL ERROR] {e}")
+            backend = os.environ.get('EMAIL_BACKEND', 'email_api').lower()
+            if backend == 'smtp':
+                msg = Message(
+                    subject="Сброс пароля — Учебный Блог",
+                    recipients=[user['email']],
+                    html=render_template('email/reset_password.html', reset_url=reset_url),
+                    body=f"Сбросить пароль: {reset_url}"
+                )
+                try:
+                    mail.send(msg)
+                except Exception as e:
+                    print(f"[EMAIL ERROR] {e}")
+            else:
+                message = SendGridMail(
+                    from_email=os.environ.get('MAIL_DEFAULT_SENDER'),
+                    to_emails=user['email'],
+                    subject="Сброс пароля — Учебный Блог",
+                    html_content=render_template('email/reset_password.html', reset_url=reset_url)
+                )
+                sg = SendGridAPIClient(os.environ.get('SENDGRID_API_KEY'))
+                try:
+                    sg.send(message)
+                except Exception as e:
+                    print(f"[EMAIL ERROR] {e}")
 
         flash('Если указанный e-mail зарегистрирован, вы получите письмо с инструкциями.', 'message')
         conn.close()
@@ -564,7 +585,6 @@ def profile():
             current_avatar = user['avatar'] if user else None
             conn.close()
 
-            # Удаляем файл с диска, если он не стандартный
             if current_avatar and current_avatar != 'default.png':
                 avatar_path = os.path.join(app.config['UPLOAD_FOLDER'], current_avatar)
                 try:
@@ -574,7 +594,6 @@ def profile():
                 except Exception as e:
                     print(f"[ERROR] Не удалось удалить аватар: {e}")
 
-            # Обновляем базу
             conn = get_db_connection()
             conn.execute('UPDATE users SET avatar = ? WHERE id = ?', ('default.png', session['user_id']))
             conn.commit()

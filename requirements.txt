@@ -4,3 +4,4 @@ gunicorn
 Flask-Mail
 email-validator
 python-dotenv
+sendgrid

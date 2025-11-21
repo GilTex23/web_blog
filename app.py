@@ -18,12 +18,27 @@ app.config.from_object(Config)
 app.config['UPLOAD_FOLDER'] = os.path.join(os.path.dirname(__file__), 'static', 'avatars')
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
 
-app.config['MAIL_SERVER'] = 'smtp.mail.ru'
-app.config['MAIL_PORT'] = 465
-app.config['MAIL_USE_SSL'] = True
+app.config['MAIL_SERVER'] = os.environ.get('MAIL_SERVER')
+app.config['MAIL_PORT'] = int(os.environ.get('MAIL_PORT', 587))
+app.config['MAIL_USE_TLS'] = os.environ.get('MAIL_USE_TLS', 'true').lower() == 'true'
+app.config['MAIL_USE_SSL'] = os.environ.get('MAIL_USE_SSL', 'false').lower() == 'true'
 app.config['MAIL_USERNAME'] = os.environ.get('MAIL_USERNAME')
 app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_PASSWORD')
 app.config['MAIL_DEFAULT_SENDER'] = os.environ.get('MAIL_DEFAULT_SENDER')
+
+print("[DEBUG] SMTP Configuration:")
+print(f"  MAIL_SERVER = {app.config.get('MAIL_SERVER')}")
+print(f"  MAIL_PORT = {app.config.get('MAIL_PORT')}")
+print(f"  MAIL_USE_TLS = {app.config.get('MAIL_USE_TLS')}")
+print(f"  MAIL_USE_SSL = {app.config.get('MAIL_USE_SSL')}")
+print(f"  MAIL_USERNAME = {app.config.get('MAIL_USERNAME')}")
+print(f"  MAIL_DEFAULT_SENDER = {app.config.get('MAIL_DEFAULT_SENDER')}")
+
+required_mail_vars = ['MAIL_SERVER', 'MAIL_PORT', 'MAIL_USERNAME', 'MAIL_PASSWORD']
+missing = [var for var in required_mail_vars if not os.environ.get(var)]
+if missing:
+    print(f"[WARN] Отсутствуют переменные окружения для почты: {', '.join(missing)}")
+    print("[INFO] Отправка e-mail будет недоступна.")
 
 mail = Mail(app)
 

@@ -22,11 +22,21 @@ app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
 
 app.config['MAIL_SERVER'] = os.environ.get('MAIL_SERVER')
 app.config['MAIL_PORT'] = int(os.environ.get('MAIL_PORT', 587))
-app.config['MAIL_USE_TLS'] = os.environ.get('MAIL_USE_TLS', 'true').lower() == 'true'
+app.config['MAIL_USE_TLS'] = os.environ.get('MAIL_USE_TLS', 'false').lower() == 'true'
 app.config['MAIL_USE_SSL'] = os.environ.get('MAIL_USE_SSL', 'false').lower() == 'true'
 app.config['MAIL_USERNAME'] = os.environ.get('MAIL_USERNAME')
 app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_PASSWORD')
 app.config['MAIL_DEFAULT_SENDER'] = os.environ.get('MAIL_DEFAULT_SENDER')
+
+# if app.config.get('EMAIL_BACKEND') == 'smtp':
+print(f"BACKEND = {os.environ.get('EMAIL_BACKEND', 'smtp').lower()}")
+print("[DEBUG] SMTP Configuration:")
+print(f"  MAIL_SERVER = {app.config.get('MAIL_SERVER')}")
+print(f"  MAIL_PORT = {app.config.get('MAIL_PORT')}")
+print(f"  MAIL_USE_TLS = {app.config.get('MAIL_USE_TLS')}")
+print(f"  MAIL_USE_SSL = {app.config.get('MAIL_USE_SSL')}")
+print(f"  MAIL_USERNAME = {app.config.get('MAIL_USERNAME')}")
+print(f"  MAIL_DEFAULT_SENDER = {app.config.get('MAIL_DEFAULT_SENDER')}")
 
 mail = Mail(app)
 
@@ -92,7 +102,7 @@ def send_verification_email(email, token):
     html_content = render_template('email/verify.html', verify_url=verify_url)
     subject = "📧 Подтвердите e-mail — Учебный Блог"
 
-    backend = os.environ.get('EMAIL_BACKEND', 'email_api').lower()
+    backend = os.environ.get('EMAIL_BACKEND', 'smtp').lower()
 
     if backend == 'smtp':
 
@@ -479,7 +489,7 @@ def forgot_password():
             conn.commit()
 
             reset_url = url_for('reset_password', token=token, _external=True)
-            backend = os.environ.get('EMAIL_BACKEND', 'email_api').lower()
+            backend = os.environ.get('EMAIL_BACKEND', 'smtp').lower()
             if backend == 'smtp':
                 msg = Message(
                     subject="Сброс пароля — Учебный Блог",

@@ -298,7 +298,7 @@ def register():
 
         unverified_email = conn.execute('SELECT created_at FROM unverified_users WHERE email = ?', (email,)).fetchone()
         if unverified_email:
-            created_at = datetime.fromisoformat(unverified_email['created_at'])
+            created_at = datetime.fromisoformat(unverified_email['created_at']).replace(tzinfo=timezone.utc)
             if datetime.now(timezone.utc) - created_at < timedelta(minutes=5):
                 remaining = timedelta(minutes=5) - (datetime.now(timezone.utc) - created_at)
                 total_seconds = int(remaining.total_seconds())
@@ -319,7 +319,7 @@ def register():
         unverified_username = conn.execute('SELECT created_at FROM unverified_users WHERE username = ?',
                                            (username,)).fetchone()
         if unverified_username:
-            created_at = datetime.fromisoformat(unverified_username['created_at'])
+            created_at = datetime.fromisoformat(unverified_username['created_at']).replace(tzinfo=timezone.utc)
             if datetime.now(timezone.utc) - created_at < timedelta(minutes=5):
                 remaining = timedelta(minutes=5) - (datetime.now(timezone.utc) - created_at)
                 total_seconds = int(remaining.total_seconds())

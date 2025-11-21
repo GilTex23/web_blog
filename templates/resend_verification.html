@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+
+{% block title %}Подтверждение e-mail{% endblock %}
+
+{% block content %}
+<div class="max-w-md mx-auto">
+    <div class="bg-white rounded-lg shadow-md p-8">
+        <div class="text-center mb-6">
+            <h2 class="text-2xl font-bold text-gray-800">Проверьте ваш e-mail</h2>
+            <p class="text-gray-600 mt-2">
+                Мы отправили письмо с подтверждением на:<br>
+                <strong class="text-blue-700">{{ email }}</strong>
+            </p>
+        </div>
+
+        <form id="resendForm" method="POST">
+            <input type="hidden" name="email" value="{{ email }}">
+            <button type="submit" id="resendBtn"
+                    class="w-full bg-blue-600 text-white font-bold py-2 px-4 rounded-md transition duration-200"
+                    {% if cooldown_seconds > 0 %}disabled{% endif %}>
+                Отправить письмо повторно
+            </button>
+        </form>
+
+        <!-- Таймер под кнопкой -->
+        {% if cooldown_seconds > 0 %}
+        <p id="cooldownText" class="text-center text-sm text-gray-500 mt-3">
+            Следующая отправка доступна через
+            <span id="countdown">{{ "%02d"|format(cooldown_seconds // 60) }}:{{ "%02d"|format(cooldown_seconds % 60) }}</span>
+        </p>
+        {% endif %}
+
+        <div class="mt-6 text-center">
+            <a href="{{ url_for('cancel_unverified', email=email) }}"
+               class="text-red-600 hover:text-red-800 text-sm">
+                Вернуться к регистрации
+            </a>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const cooldown = {{ cooldown_seconds }};
+    const button = document.getElementById('resendBtn');
+    const cooldownText = document.getElementById('cooldownText');
+    const countdownSpan = document.getElementById('countdown');
+
+    if (cooldown > 0 && button && countdownSpan) {
+        button.disabled = true;
+        let seconds = cooldown;
+
+        const timer = setInterval(() => {
+            seconds--;
+            const mins = Math.floor(seconds / 60);
+            const secs = seconds % 60;
+            countdownSpan.textContent = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+
+            if (seconds <= 0) {
+                clearInterval(timer);
+                button.disabled = false;
+                if (cooldownText) cooldownText.style.display = 'none';
+            }
+        }, 1000);
+    }
+});
+</script>
+{% endblock %}

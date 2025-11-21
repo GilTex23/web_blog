@@ -3,6 +3,7 @@
 {% block title %}Регистрация - Учебный Блог{% endblock %}
 
 {% block content %}
+
 <div class="max-w-md mx-auto">
     <div class="bg-white rounded-lg shadow-md p-8">
         <div class="text-center mb-6">
@@ -10,36 +11,235 @@
             <p class="text-gray-600">Создайте новый аккаунт</p>
         </div>
 
-        <form method="POST">
+        <form id="registrationForm" method="POST">
             <div class="mb-4">
                 <label for="username" class="block text-gray-800 font-medium mb-2">Имя пользователя</label>
-                <input type="text" id="username" name="username"
+                <input type="text" id="username" name="username" value="{{ username or '' }}"
                        class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                       required minlength="3" maxlength="20" pattern="[a-zA-Zа-яА-Я0-9_.-]+"
+                       required minlength="3" maxlength="20"
                        title="Разрешены только буквы, цифры, подчеркивание, дефис и точка">
+                <p id="username-error" class="text-red-500 text-sm mt-1 hidden"></p>
             </div>
             <div class="mb-4">
                 <label for="password" class="block text-gray-800 font-medium mb-2">Пароль</label>
                 <input type="password" id="password" name="password"
                        class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                        required minlength="6">
+                <p id="password-error" class="text-red-500 text-sm mt-1 hidden"></p>
             </div>
             <div class="mb-6">
                 <label for="confirm_password" class="block text-gray-800 font-medium mb-2">Подтвердите пароль</label>
-                <input type="password" id="confirm_password" name="confirm_password" 
+                <input type="password" id="confirm_password" name="confirm_password"
                        class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                        required minlength="6">
+                <p id="confirm-error" class="text-red-500 text-sm mt-1 hidden"></p>
             </div>
-            <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-md transition duration-200">
+            <div class="mb-6">
+                <label for="email" class="block text-gray-800 font-medium mb-2">Электронная почта</label>
+                <input type="email"
+                       id="email"
+                       name="email"
+                       value="{{ email or '' }}"
+                       class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                       placeholder="example@domain.com"
+                       required>
+                <p id="email-error" class="text-red-500 text-sm mt-1 hidden"></p>
+            </div>
+            <div class="mb-6">
+                <label for="confirm_email" class="block text-gray-800 font-medium mb-2">Подтвердите почту</label>
+                <input type="email"
+                       id="confirm_email"
+                       name="confirm_email"
+                       value="{{ confirm_email or '' }}"
+                       class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                       placeholder="example@domain.com"
+                       required>
+                <p id="conf-email-error" class="text-red-500 text-sm mt-1 hidden">Почты не совпадают</p>
+            </div>
+
+            <!-- Сообщение об ошибке -->
+
+            <button type="submit"
+                    class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-md transition duration-200">
                 Зарегистрироваться
             </button>
         </form>
-        
+
         <div class="mt-4 text-center">
             <p class="text-sm text-gray-600">
-                Уже есть аккаунт? <a href="{{ url_for('login') }}" class="text-blue-600 hover:text-blue-800 font-medium">Войти</a>
+                Уже есть аккаунт? <a href="{{ url_for('login') }}"
+                                     class="text-blue-600 hover:text-blue-800 font-medium">Войти</a>
             </p>
         </div>
     </div>
 </div>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        // Регулярка для базовой валидации e-mail (без запрещённых символов)
+        function validateEmail(email) {
+            const re = /^[^<>"'`%#{}|\\^\[\]~\s@]+@[^<>"'`%#{}|\\^\[\]~\s@]+\.[^<>"'`%#{}|\\^\[\]~\s@]+$/;
+            return re.test(email);
+        }
+
+        function showError(id, msg) {
+            const el = document.getElementById(id);
+            if (el) {
+                el.textContent = msg;
+                el.classList.remove('hidden');
+            }
+        }
+
+        function hideError(id) {
+            const el = document.getElementById(id);
+            if (el) el.classList.add('hidden');
+        }
+
+        const username = document.getElementById('username');
+
+        if (username) {
+            username.addEventListener('input', function () {
+                const val = this.value;
+                if (!val) {
+                    hideError('username-error');
+                } else if (val.length < 3) {
+                    showError('username-error', 'Минимум 3 символа');
+                } else if (val.length > 20) {
+                    showError('username-error', 'Максимум 20 символов');
+                } else {
+                    // Проверка по разрешённым символам (как в Python)
+                    const re = /^[a-zA-Zа-яА-Я0-9_.-]+$/;
+                    if (!re.test(val)) {
+                        showError('username-error', 'Разрешены только буквы, цифры, _, - и .');
+                    } else {
+                        hideError('username-error');
+                    }
+                }
+            });
+        }
+
+        // === Проверка пароля и подтверждения в реальном времени ===
+        const password = document.getElementById('password');
+        const confirmPassword = document.getElementById('confirm_password');
+        const email = document.getElementById('email');
+        const confirmEmail = document.getElementById('confirm_email');
+
+        // При вводе в поле подтверждения пароля
+        if (confirmPassword) {
+            confirmPassword.addEventListener('input', function () {
+                const pwd = password?.value || '';
+                const conf = this.value;
+
+                if (conf === '') {
+                    hideError('confirm-error');
+                } else if (conf !== pwd) {
+                    showError('confirm-error', 'Пароли не совпадают');
+                } else {
+                    hideError('confirm-error');
+                }
+            });
+        }
+
+        // При вводе в поле подтверждения e-mail
+        if (confirmEmail) {
+            confirmEmail.addEventListener('input', function () {
+                const eml = email?.value.trim() || '';
+                const conf = this.value.trim();
+
+                if (conf === '') {
+                    hideError('conf-email-error');
+                } else if (conf !== eml) {
+                    showError('conf-email-error', 'E-mail не совпадают');
+                } else {
+                    hideError('conf-email-error');
+                }
+            });
+        }
+
+        // === Полная валидация при отправке формы ===
+        function validateForm() {
+            const usernameEl = document.getElementById('username');
+            const username = usernameEl?.value.trim() || '';
+            const pwd = password?.value || '';
+            const confPwd = confirmPassword?.value || '';
+            const eml = email?.value.trim() || '';
+            const confEml = confirmEmail?.value.trim() || '';
+
+            let ok = true;
+
+            if (!username) {
+                showError('username-error', 'Имя пользователя не может быть пустым');
+                ok = false;
+            } else if (username.length < 3) {
+                showError('username-error', 'Имя должно содержать минимум 3 символа');
+                ok = false;
+            } else if (username.length > 20) {
+                showError('username-error', 'Имя не должно превышать 20 символов');
+                ok = false;
+            } else {
+                const usernameRegex = /^[a-zA-Zа-яА-ЯёЁ0-9_.-]+$/;
+                if (!usernameRegex.test(username)) {
+                    showError('username-error', 'Разрешены только буквы, цифры, _, - и .');
+                    ok = false;
+                } else {
+                    hideError('username-error');
+                }
+            }
+
+            // Email
+            if (!eml) {
+                showError('email-error', 'Введите e-mail');
+                ok = false;
+            } else if (!validateEmail(eml)) {
+                showError('email-error', 'Некорректный e-mail');
+                ok = false;
+            } else {
+                hideError('email-error');
+            }
+
+            // Подтверждение e-mail (обязательно)
+            if (!confEml) {
+                showError('conf-email-error', 'Подтвердите e-mail');
+                ok = false;
+            } else if (confEml !== eml) {
+                showError('conf-email-error', 'E-mail не совпадают');
+                ok = false;
+            } else {
+                hideError('conf-email-error');
+            }
+
+            // Пароль
+            if (!pwd) {
+                showError('password-error', 'Введите пароль');
+                ok = false;
+            } else if (pwd.length < 6) {
+                showError('password-error', 'Минимум 6 символов');
+                ok = false;
+            } else {
+                hideError('password-error');
+            }
+
+            // Подтверждение пароля (обязательно)
+            if (!confPwd) {
+                showError('confirm-error', 'Подтвердите пароль');
+                ok = false;
+            } else if (confPwd !== pwd) {
+                showError('confirm-error', 'Пароли не совпадают');
+                ok = false;
+            } else {
+                hideError('confirm-error');
+            }
+
+            return ok;
+        }
+
+        // Привязка к отправке формы
+        const form = document.getElementById('registrationForm');
+        if (form) {
+            form.addEventListener('submit', function (e) {
+                if (!validateForm()) e.preventDefault();
+            });
+        }
+    });
+</script>
 {% endblock %}
+

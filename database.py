@@ -13,8 +13,21 @@ def init_db():
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             username TEXT UNIQUE NOT NULL,
             password_hash TEXT NOT NULL,
+            email TEXT UNIQUE NOT NULL,
             avatar TEXT DEFAULT 'default.png',
             timezone_offset INTEGER DEFAULT 3
+        )
+    ''')
+
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS unverified_users (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            username TEXT NOT NULL,
+            email TEXT NOT NULL,
+            password_hash TEXT NOT NULL,
+            verification_token TEXT NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            last_email_sent_at TIMESTAMP
         )
     ''')
 
@@ -41,12 +54,19 @@ def init_db():
         )
     ''')
 
-    cursor.execute("SELECT * FROM users WHERE username = 'admin'")
-    if not cursor.fetchone():
-        admin_pass = generate_password_hash('admin123')
-        cursor.execute(
-            "INSERT INTO users (username, password_hash, avatar, timezone_offset) VALUES (?, ?, 'default.png', 3)",
-            ('admin', admin_pass))
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS password_reset_tokens (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL,
+            token TEXT NOT NULL,
+            expires_at TIMESTAMP NOT NULL,
+            FOREIGN KEY (user_id) REFERENCES users (id)
+        )
+    ''')
+
+    cursor.execute('CREATE UNIQUE INDEX IF NOT EXISTS idx_users_email ON users(email);')
+    cursor.execute('CREATE UNIQUE INDEX IF NOT EXISTS idx_unverified_email ON unverified_users(email);')
+    cursor.execute('CREATE UNIQUE INDEX IF NOT EXISTS idx_unverified_username ON unverified_users(username);')
 
     conn.commit()
     conn.close()

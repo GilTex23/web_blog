@@ -723,5 +723,5 @@ def add_comment(post_id):
 
 init_db()
 
-if __name__ == '__main__':
-    app.run(debug=True)
+# if __name__ == '__main__':
+#     app.run(debug=True)

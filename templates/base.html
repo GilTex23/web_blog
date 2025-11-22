@@ -6,6 +6,21 @@
     <title>{% block title %}Учебный Блог{% endblock %}</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <script type="text/javascript">
+        (function(m,e,t,r,i,k,a){
+            m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
+            m[i].l=1*new Date();
+            for (var j = 0; j < document.scripts.length; j++) {if (document.scripts[j].src === r) { return; }}
+            k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)
+        })(window, document,'script','https://mc.yandex.ru/metrika/tag.js?id=105454616', 'ym');
+
+        ym(105454616, 'init', {ssr:true, webvisor:true, clickmap:true, ecommerce:"dataLayer", accurateTrackBounce:true, trackLinks:true});
+    </script>
+    <noscript>
+        <div><img src="https://mc.yandex.ru/watch/105454616" style="position:absolute; left:-9999px;" alt=""/></div>
+    </noscript>
+
     <script>
         tailwind.config = {
             theme: {
@@ -223,63 +238,69 @@
     </style>
 </head>
 <body class="bg-gray-50 min-h-screen">
-    <!-- Navigation -->
-    <nav class="bg-white shadow-sm border-b">
-        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex justify-between h-16">
-                <div class="flex items-center">
-                    <a href="{{ url_for('index') }}" class="text-xl font-bold text-blue-600 hover:text-blue-800">Учебный Блог</a>
-                </div>
-                <div class="flex items-center space-x-4">
-                    {% if session.username %}
-                        <div class="flex items-center space-x-2">
-                            {% if session.avatar and session.avatar != 'default.png' %}
-                                <img src="{{ url_for('static', filename='avatars/' + session.avatar) }}"
-                                     alt="Аватар"
-                                     class="w-8 h-8 rounded-full object-cover">
-                            {% else %}
-                                <div class="avatar-circle avatar-{{ session.username|first|upper }} w-8 h-8 flex items-center justify-center text-sm">
-                                    {{ session.username|first|upper }}
-                                </div>
-                            {% endif %}
-                            <span class="hidden md:inline text-gray-700 font-medium">{{ session.username }}</span>
-                        </div>
-                        <a href="{{ url_for('profile') }}" class="text-gray-600 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium">
-                            <i class="fas fa-user-cog"></i>
-                        </a>
-                        <a href="{{ url_for('logout') }}" class="text-gray-600 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium">
-                            <i class="fas fa-sign-out-alt"></i>
-                        </a>
-                        <a href="{{ url_for('new_post') }}" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium transition duration-200">
-                            <i class="fas fa-plus"></i> Новый пост
-                        </a>
+<!-- Navigation -->
+<nav class="bg-white shadow-sm border-b">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex justify-between h-16">
+            <div class="flex items-center">
+                <a href="{{ url_for('index') }}" class="text-xl font-bold text-blue-600 hover:text-blue-800">Учебный
+                    Блог</a>
+            </div>
+            <div class="flex items-center space-x-4">
+                {% if session.username %}
+                <div class="flex items-center space-x-2">
+                    {% if session.avatar and session.avatar != 'default.png' %}
+                    <img src="{{ url_for('static', filename='avatars/' + session.avatar) }}"
+                         alt="Аватар"
+                         class="w-8 h-8 rounded-full object-cover">
                     {% else %}
-                        <a href="{{ url_for('register') }}" class="text-gray-600 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium">
-                            <i class="fas fa-user-plus"></i> Регистрация
-                        </a>
-                        <a href="{{ url_for('login') }}" class="text-gray-600 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium">
-                            <i class="fas fa-user"></i> Вход
-                        </a>
+                    <div class="avatar-circle avatar-{{ session.username|first|upper }} w-8 h-8 flex items-center justify-center text-sm">
+                        {{ session.username|first|upper }}
+                    </div>
                     {% endif %}
+                    <span class="hidden md:inline text-gray-700 font-medium">{{ session.username }}</span>
                 </div>
+                <a href="{{ url_for('profile') }}"
+                   class="text-gray-600 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium">
+                    <i class="fas fa-user-cog"></i>
+                </a>
+                <a href="{{ url_for('logout') }}"
+                   class="text-gray-600 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium">
+                    <i class="fas fa-sign-out-alt"></i>
+                </a>
+                <a href="{{ url_for('new_post') }}"
+                   class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium transition duration-200">
+                    <i class="fas fa-plus"></i> Новый пост
+                </a>
+                {% else %}
+                <a href="{{ url_for('register') }}"
+                   class="text-gray-600 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium">
+                    <i class="fas fa-user-plus"></i> Регистрация
+                </a>
+                <a href="{{ url_for('login') }}"
+                   class="text-gray-600 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium">
+                    <i class="fas fa-user"></i> Вход
+                </a>
+                {% endif %}
             </div>
         </div>
-    </nav>
+    </div>
+</nav>
 
-    <main class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-                <div class="mb-6">
-                    {% for category, message in messages %}
-                        <div class="alert alert-{{ category }}">
-                            {{ message }}
-                        </div>
-                    {% endfor %}
-                </div>
-            {% endif %}
-        {% endwith %}
+<main class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    <div class="mb-6">
+        {% for category, message in messages %}
+        <div class="alert alert-{{ category }}">
+            {{ message }}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+    {% endwith %}
 
-        {% block content %}{% endblock %}
-    </main>
+    {% block content %}{% endblock %}
+</main>
 </body>
 </html>

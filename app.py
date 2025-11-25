@@ -126,7 +126,8 @@ def send_verification_email(email, token):
         sg = SendGridAPIClient(os.environ.get('SENDGRID_API_KEY'))
         response = sg.send(message)
         print(f"[EMAIL] Отправлено через SendGrid API: {response.status_code}")
-
+        print("Ответ сервера:", response.body)
+        print("Хедеры:", response.headers)
     else:
         raise ValueError(f"Неизвестный EMAIL_BACKEND: {backend}")
 
@@ -391,44 +392,47 @@ def resend_verification():
         if last_sent:
             last_sent_time = datetime.fromisoformat(last_sent)
             elapsed = datetime.now(timezone.utc).replace(tzinfo=None) - last_sent_time
-            if elapsed < timedelta(minutes=2):
-                remaining = timedelta(minutes=2) - elapsed
+            if elapsed < timedelta(minutes=1):
+                remaining = timedelta(minutes=1) - elapsed
                 cooldown_seconds = int(remaining.total_seconds())
-
         return render_template('resend_verification.html', email=email, cooldown_seconds=cooldown_seconds)
 
-    if request.method == 'POST':
+    # POST
+    conn = get_db_connection()
+    unverified = conn.execute('SELECT last_email_sent_at FROM unverified_users WHERE email = ?', (email,)).fetchone()
+    if not unverified:
+        conn.close()
+        flash('Регистрация больше не активна.', 'error')
+        return redirect(url_for('register'))
 
-        last_sent = unverified['last_email_sent_at']
-        if last_sent:
-            last_sent_time = datetime.fromisoformat(last_sent)
-            if datetime.now(timezone.utc) - last_sent_time < timedelta(minutes=2):
-                remaining = timedelta(minutes=2) - (datetime.now(timezone.utc) - last_sent_time)
-                total_seconds = int(remaining.total_seconds())
-                mins, secs = divmod(total_seconds, 60)
-                flash(f'Повторная отправка возможна через {mins} мин {secs} сек.', 'error')
-                return render_template('resend_verification.html', email=email)
-
-        try:
-            send_verification_email(email, unverified['verification_token'])
-
-            conn.execute('''
-                UPDATE unverified_users 
-                SET last_email_sent_at = CURRENT_TIMESTAMP 
-                WHERE email = ?
-            ''', (email,))
-            conn.commit()
-            flash('Письмо отправлено повторно! Проверьте ваш e-mail.', 'success')
-        except Exception as e:
-            print(f"[EMAIL ERROR] {e}")
-            flash('Не удалось отправить письмо. Попробуйте позже.', 'error')
-        finally:
+    last_sent = unverified['last_email_sent_at']
+    if last_sent:
+        last_sent_time = datetime.fromisoformat(last_sent).replace(tzinfo=timezone.utc)
+        if datetime.now(timezone.utc) - last_sent_time < timedelta(minutes=1):
+            remaining = timedelta(minutes=1) - (datetime.now(timezone.utc) - last_sent_time)
+            total_seconds = int(remaining.total_seconds())
+            mins, secs = divmod(total_seconds, 60)
+            flash(f'Повторная отправка возможна через {mins} мин {secs} сек.', 'error')
+            # ⚠️ Здесь тоже нужно передать cooldown_seconds!
+            cooldown_seconds = total_seconds
             conn.close()
+            return render_template('resend_verification.html', email=email, cooldown_seconds=cooldown_seconds)
 
-        return render_template('resend_verification.html', email=email)
+    try:
+        # Повторно получаем полную запись для токена
+        unverified_full = conn.execute('SELECT * FROM unverified_users WHERE email = ?', (email,)).fetchone()
+        send_verification_email(email, unverified_full['verification_token'])
 
-    conn.close()
-    return render_template('resend_verification.html', email=email)
+        conn.execute('UPDATE unverified_users SET last_email_sent_at = CURRENT_TIMESTAMP WHERE email = ?', (email,))
+        conn.commit()
+        flash('Письмо отправлено повторно! Проверьте ваш e-mail.', 'success')
+    except Exception as e:
+        print(f"[EMAIL ERROR] {e}")
+        flash('Не удалось отправить письмо. Попробуйте позже.', 'error')
+    finally:
+        conn.close()
+
+    return redirect(url_for('resend_verification', email=email))
 
 
 @app.route('/cancel-unverified')
@@ -442,7 +446,7 @@ def cancel_unverified():
     conn.commit()
     conn.close()
 
-    flash('Регистрация отменена. Вы можете зарегистрироваться заново.', 'message')
+    flash('Регистрация отменена. Вы можете зарегистрироваться заново.', 'success')
     return redirect(url_for('register'))
 
 
@@ -514,7 +518,7 @@ def forgot_password():
                 except Exception as e:
                     print(f"[EMAIL ERROR] {e}")
 
-        flash('Если указанный e-mail зарегистрирован, вы получите письмо с инструкциями.', 'message')
+        flash('Если указанный e-mail зарегистрирован, вы получите письмо с инструкциями.', 'success')
         conn.close()
         return redirect(url_for('login'))
 
@@ -524,6 +528,10 @@ def forgot_password():
 @app.route('/reset-password/<token>', methods=['GET', 'POST'])
 def reset_password(token):
     conn = get_db_connection()
+
+    conn.execute("""DELETE FROM password_reset_tokens WHERE expires_at < datetime('now')""")
+    conn.commit()
+
     reset_record = conn.execute('''
         SELECT * FROM password_reset_tokens 
         WHERE token = ? AND expires_at > datetime('now')
@@ -767,5 +775,5 @@ def add_comment(post_id):
 
 init_db()
 
-# if __name__ == '__main__':
-#     app.run(debug=True)
+if __name__ == '__main__':
+    app.run(debug=True)

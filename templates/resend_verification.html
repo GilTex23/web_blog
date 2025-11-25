@@ -16,7 +16,8 @@
         <form id="resendForm" method="POST">
             <input type="hidden" name="email" value="{{ email }}">
             <button type="submit" id="resendBtn"
-                    class="w-full bg-blue-600 text-white font-bold py-2 px-4 rounded-md transition duration-200"
+                    class="w-full bg-blue-600 text-white font-bold py-2 px-4 rounded-md transition duration-200
+                            {% if cooldown_seconds > 0 %}cooldown{% endif %}"
                     {% if cooldown_seconds > 0 %}disabled{% endif %}>
                 Отправить письмо повторно
             </button>
@@ -48,6 +49,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     if (cooldown > 0 && button && countdownSpan) {
         button.disabled = true;
+        button.classList.add('cooldown')
         let seconds = cooldown;
 
         const timer = setInterval(() => {
@@ -59,6 +61,7 @@ document.addEventListener('DOMContentLoaded', function () {
             if (seconds <= 0) {
                 clearInterval(timer);
                 button.disabled = false;
+                button.classList.remove('cooldown')
                 if (cooldownText) cooldownText.style.display = 'none';
             }
         }, 1000);

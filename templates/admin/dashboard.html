@@ -1,0 +1,156 @@
+{% extends "base.html" %}
+{% block title %}Админка — Учебный Блог{% endblock %}
+
+{% block content %}
+<div class="mb-6">
+    <h1 class="text-2xl font-bold text-gray-800 flex items-center gap-2">
+        <i class="fas fa-shield-alt text-blue-600"></i>
+        Админка
+    </h1>
+    <p class="text-gray-600">Управление контентом и пользователями</p>
+</div>
+
+<!-- Посты -->
+<div class="bg-white rounded-lg shadow p-6 mb-8">
+    <h2 class="text-xl font-semibold mb-4 flex items-center gap-2">
+        <i class="fas fa-pencil-alt text-gray-600"></i>
+        Посты
+    </h2>
+    {% if posts %}
+    <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+            <tr>
+                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
+                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Заголовок
+                </th>
+                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Автор</th>
+                <th class="px-4 py-2 text-left text-xs font medium text-gray-500 uppercase tracking-wider">Дата</th>
+                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Действия</th>
+            </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+            {% for post in posts %}
+            <tr class="hover:bg-gray-50">
+                <td class="px-4 py-3 text-sm text-gray-500">{{ post.id }}</td>
+                <td class="px-4 py-3 text-sm font-medium text-gray-900">{{ post.title }}</td>
+                <td class="px-4 py-3 text-sm text-gray-600">{{ post.author_name }}</td>
+                <td class="px-4 py-3 text-sm text-gray-500">{{ post.created_at[:10] }}</td>
+                <td class="px-4 py-3 text-sm">
+                    <a href="{{ url_for('admin_edit_post', post_id=post.id) }}"
+                       class="text-blue-600 hover:text-blue-800 mr-3">
+                        <i class="fas fa-edit"></i>
+                    </a>
+                    <form method="POST" action="{{ url_for('admin_delete_post', post_id=post.id) }}" class="inline">
+                        <button type="submit"
+                                class="text-red-600 hover:text-red-800"
+                                onclick="return confirm('Удалить пост «{{ post.title[:30] }}...»? Все комментарии к нему тоже будут удалены.')">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <p class="text-gray-500">Нет постов</p>
+    {% endif %}
+</div>
+
+<!-- Пользователи -->
+<div class="bg-white rounded-lg shadow p-6 mb-8">
+    <h2 class="text-xl font-semibold mb-4 flex items-center gap-2">
+        <i class="fas fa-users text-gray-600"></i>
+        Пользователи
+    </h2>
+    {% if users %}
+    <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+            <tr>
+                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
+                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Логин</th>
+                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
+                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Действия</th>
+            </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+            {% for user in users %}
+            <tr class="hover:bg-gray-50">
+                <td class="px-4 py-3 text-sm text-gray-500">{{ user.id }}</td>
+                <td class="px-4 py-3 text-sm font-medium text-gray-900">
+                    {{ user.username }}
+                    {% if user.is_admin %}
+                    <span class="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                        <i class="fas fa-shield-alt mr-1"></i> Админ
+                    </span>
+                    {% endif %}
+                </td>
+                <td class="px-4 py-3 text-sm text-gray-600">{{ user.email }}</td>
+                <td class="px-4 py-3 text-sm">
+                    {% if user.id != session.user_id %}
+                    <form method="POST" action="{{ url_for('toggle_admin', user_id=user.id) }}" class="inline mr-2">
+                        <button type="submit"
+                                class="text-{{ 'green' if not user.is_admin else 'yellow' }}-600 hover:text-{{ 'green' if not user.is_admin else 'yellow' }}-800"
+                                title="{{ 'Сделать админом' if not user.is_admin else 'Убрать права админа' }}"
+                                onclick="return confirm('{{ 'Назначить администратором?' if not user.is_admin else 'Лишить прав администратора?' }}')">
+                            <i class="fas fa-{{ 'user-shield' if not user.is_admin else 'user-times' }}"></i>
+                        </button>
+                    </form>
+
+                    <form method="POST" action="{{ url_for('admin_delete_user', user_id=user.id) }}" class="inline">
+                        <button type="submit"
+                                class="text-red-600 hover:text-red-800"
+                                title="Удалить пользователя"
+                                onclick="return confirm('Удалить пользователя «{{ user.username }}»? ВСЕ его посты, комментарии и данные будут удалены безвозвратно!')">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </form>
+                    {% else %}
+                    <span class="text-blue-600 font-medium">Вы (админ)</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <p class="text-gray-500">Нет пользователей</p>
+    {% endif %}
+</div>
+
+<!-- Последние комментарии -->
+<div class="bg-white rounded-lg shadow p-6">
+    <h2 class="text-xl font-semibold mb-4 flex items-center gap-2">
+        <i class="fas fa-comments text-gray-600"></i>
+        Последние комментарии
+    </h2>
+    {% if comments %}
+    <ul class="space-y-3">
+        {% for comment in comments %}
+        <li class="border-l-4 border-blue-100 pl-3 py-1">
+            <div class="text-sm">
+                <span class="font-medium text-gray-900">{{ comment.author_name }}</span>
+                <span class="text-gray-500"> → </span>
+                <span class="text-gray-600 italic">«{{ comment.post_title }}»</span>
+            </div>
+            <div class="text-gray-700 mt-1">{{ comment.content[:100] }}{% if comment.content|length > 100 %}…{% endif
+                %}
+            </div>
+        </li>
+        {% endfor %}
+    </ul>
+    {% else %}
+    <p class="text-gray-500">Нет комментариев</p>
+    {% endif %}
+    </ul>
+</div>
+
+<a href="{{ url_for('index') }}" class="inline-flex items-center text-blue-600 hover:text-blue-800 mt-6">
+    <i class="fas fa-arrow-left mr-1"></i> Вернуться на сайт
+</a>
+
+{% endblock %}

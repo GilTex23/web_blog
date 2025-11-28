@@ -12,6 +12,7 @@ from email_validator import validate_email, EmailNotValidError
 from dotenv import load_dotenv
 from sendgrid import SendGridAPIClient
 from sendgrid.helpers.mail import Mail as SendGridMail
+from functools import wraps
 
 load_dotenv()
 
@@ -45,6 +46,19 @@ ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
 
 last_resend = {}
 
+def admin_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if 'user_id' not in session:
+            return redirect(url_for('login'))
+        conn = get_db_connection()
+        user = conn.execute('SELECT is_admin FROM users WHERE id = ?', (session['user_id'],)).fetchone()
+        conn.close()
+        if not user or not user['is_admin']:
+            flash('Доступ запрещён', 'error')
+            return redirect(url_for('index'))
+        return f(*args, **kwargs)
+    return decorated_function
 
 def allowed_file(filename):
     return '.' in filename and \
@@ -242,6 +256,7 @@ def login():
             session['username'] = user['username']
             session['avatar'] = user['avatar']
             session['timezone_offset'] = user['timezone_offset']
+            session['is_admin'] = bool(user['is_admin'])
             return redirect(url_for('index'))
 
     return render_template('login.html', **form_data)
@@ -621,15 +636,48 @@ def profile():
             flash('Аватар успешно удален!', 'success')
             return redirect(url_for('profile'))
 
+
         elif 'delete_account' in request.form:
-
+            user_id = session['user_id']
             conn = get_db_connection()
-            conn.execute('DELETE FROM users WHERE id = ?', (session['user_id'],))
-            conn.commit()
-            conn.close()
+            user = conn.execute('SELECT username, avatar FROM users WHERE id = ?', (user_id,)).fetchone()
+            if not user:
+                conn.close()
+                flash('Пользователь не найден', 'error')
+                return redirect(url_for('index'))
+            username = user['username']
+            avatar_filename = user['avatar']
 
+            try:
+                conn.execute('BEGIN TRANSACTION')
+                conn.execute('''
+                            DELETE FROM comments 
+                            WHERE post_id IN (SELECT id FROM posts WHERE author_id = ?)
+                        ''', (user_id,))
+                conn.execute('DELETE FROM comments WHERE author_name = ?', (username,))
+                conn.execute('DELETE FROM posts WHERE author_id = ?', (user_id,))
+                conn.execute('DELETE FROM password_reset_tokens WHERE user_id = ?', (user_id,))
+                conn.execute('DELETE FROM users WHERE id = ?', (user_id,))
+                conn.commit()
+            except Exception as e:
+                conn.rollback()
+                print(f"[ERROR] Ошибка при удалении аккаунта: {e}")
+                flash('Ошибка при удалении аккаунта. Попробуйте позже.', 'error')
+                conn.close()
+                return redirect(url_for('profile'))
+            finally:
+                conn.close()
+
+            if avatar_filename != 'default.png':
+                avatar_path = os.path.join(app.config['UPLOAD_FOLDER'], avatar_filename)
+                try:
+                    if os.path.exists(avatar_path):
+                        os.remove(avatar_path)
+                        print(f"[INFO] Аватар удалён: {avatar_path}")
+                except Exception as e:
+                    print(f"[ERROR] Не удалось удалить аватар: {e}")
             session.clear()
-            flash('Аккаунт успешно удален!', 'success')
+            flash('Аккаунт и все связанные данные успешно удалены!', 'success')
             return redirect(url_for('index'))
 
         elif 'timezone_offset' in request.form:
@@ -771,6 +819,144 @@ def add_comment(post_id):
     conn.close()
 
     return redirect(url_for('post_detail', post_id=post_id))
+
+
+@app.route('/admin')
+@admin_required
+def admin_dashboard():
+    conn = get_db_connection()
+    posts = conn.execute('''
+        SELECT p.id, p.title, u.username as author_name, p.created_at
+        FROM posts p 
+        JOIN users u ON p.author_id = u.id 
+        ORDER BY p.created_at DESC
+    ''').fetchall()
+    users = conn.execute('SELECT id, username, email, is_admin FROM users ORDER BY id').fetchall()
+    comments = conn.execute('''
+        SELECT c.id, c.content, c.author_name, p.title as post_title
+        FROM comments c
+        JOIN posts p ON c.post_id = p.id
+        ORDER BY c.id DESC
+        LIMIT 20
+    ''').fetchall()
+    conn.close()
+    return render_template('admin/dashboard.html', posts=posts, users=users, comments=comments)
+
+
+@app.route('/admin/post/<int:post_id>/edit', methods=['GET', 'POST'])
+@admin_required
+def admin_edit_post(post_id):
+    conn = get_db_connection()
+    post = conn.execute('SELECT * FROM posts WHERE id = ?', (post_id,)).fetchone()
+    if not post:
+        conn.close()
+        flash('Пост не найден', 'error')
+        return redirect(url_for('admin_dashboard'))
+
+    if request.method == 'POST':
+        title = request.form['title']
+        content = request.form['content']
+        if not title.strip() or not content.strip():
+            flash('Заголовок и содержание не могут быть пустыми', 'error')
+        else:
+            conn.execute('UPDATE posts SET title = ?, content = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+                         (title, content, post_id))
+            conn.commit()
+            flash('Пост обновлён', 'success')
+            conn.close()
+            return redirect(url_for('admin_dashboard'))
+
+    conn.close()
+    return render_template('admin/edit_post.html', post=post)
+
+
+@app.route('/admin/post/<int:post_id>/delete', methods=['POST'])
+@admin_required
+def admin_delete_post(post_id):
+    conn = get_db_connection()
+    # Удалим сначала комментарии
+    conn.execute('DELETE FROM comments WHERE post_id = ?', (post_id,))
+    conn.execute('DELETE FROM posts WHERE id = ?', (post_id,))
+    conn.commit()
+    conn.close()
+    flash('Пост удалён', 'success')
+    return redirect(url_for('admin_dashboard'))
+
+
+@app.route('/admin/user/<int:user_id>/delete', methods=['POST'])
+@admin_required
+def admin_delete_user(user_id):
+    if user_id == session['user_id']:
+        flash('Нельзя удалить самого себя!', 'error')
+        return redirect(url_for('admin_dashboard'))
+
+    conn = get_db_connection()
+    user = conn.execute('SELECT username, avatar FROM users WHERE id = ?', (user_id,)).fetchone()
+    if not user:
+        conn.close()
+        flash('Пользователь не найден', 'error')
+        return redirect(url_for('admin_dashboard'))
+
+    username = user['username']
+
+    # Удаляем всё, как в profile
+    conn.execute('BEGIN TRANSACTION')
+    try:
+        conn.execute('DELETE FROM comments WHERE post_id IN (SELECT id FROM posts WHERE author_id = ?)', (user_id,))
+        conn.execute('DELETE FROM comments WHERE author_name = ?', (username,))
+        conn.execute('DELETE FROM posts WHERE author_id = ?', (user_id,))
+        conn.execute('DELETE FROM password_reset_tokens WHERE user_id = ?', (user_id,))
+        conn.execute('DELETE FROM users WHERE id = ?', (user_id,))
+
+        # Удаляем аватар
+        if user['avatar'] != 'default.png':
+            avatar_path = os.path.join(app.config['UPLOAD_FOLDER'], user['avatar'])
+            if os.path.exists(avatar_path):
+                os.remove(avatar_path)
+
+        conn.commit()
+        flash('Пользователь удалён', 'success')
+    except Exception as e:
+        conn.rollback()
+        print(f"[ERROR] Админка: ошибка удаления пользователя: {e}")
+        flash('Ошибка при удалении', 'error')
+    finally:
+        conn.close()
+
+    return redirect(url_for('admin_dashboard'))
+
+
+@app.route('/admin/user/<int:user_id>/toggle-admin', methods=['POST'])
+@admin_required
+def toggle_admin(user_id):
+    if user_id == session['user_id']:
+        flash('Нельзя изменить свой статус!', 'error')
+        return redirect(url_for('admin_dashboard'))
+
+    conn = get_db_connection()
+    user = conn.execute('SELECT is_admin FROM users WHERE id = ?', (user_id,)).fetchone()
+    if not user:
+        conn.close()
+        flash('Пользователь не найден', 'error')
+        return redirect(url_for('admin_dashboard'))
+
+    new_status = 0 if user['is_admin'] else 1
+    conn.execute('UPDATE users SET is_admin = ? WHERE id = ?', (new_status, user_id))
+    conn.commit()
+    conn.close()
+
+    action = "назначен администратором" if new_status else "лишён прав администратора"
+    flash(f'Пользователь изменён: {action}.', 'success')
+    return redirect(url_for('admin_dashboard'))
+
+
+@app.route('/make-admin')
+def make_admin():
+    conn = get_db_connection()
+    conn.execute("UPDATE users SET is_admin = 1 WHERE username = 'admin'")
+    conn.commit()
+    conn.close()
+    return "Сделан админом!"
 
 
 init_db()

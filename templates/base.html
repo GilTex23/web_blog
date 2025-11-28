@@ -8,19 +8,20 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
-    <!--    <script type="text/javascript">-->
-    <!--        (function(m,e,t,r,i,k,a){-->
-    <!--            m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};-->
-    <!--            m[i].l=1*new Date();-->
-    <!--            for (var j = 0; j < document.scripts.length; j++) {if (document.scripts[j].src === r) { return; }}-->
-    <!--            k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)-->
-    <!--        })(window, document,'script','https://mc.yandex.ru/metrika/tag.js?id=105454616', 'ym');-->
+    <script type="text/javascript">
+        (function(m,e,t,r,i,k,a){
+            m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
+            m[i].l=1*new Date();
+            for (var j = 0; j < document.scripts.length; j++) {if (document.scripts[j].src === r) { return; }}
+            k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)
+        })(window, document,'script','https://mc.yandex.ru/metrika/tag.js?id=105539666', 'ym');
 
-    <!--        ym(105454616, 'init', {ssr:true, webvisor:true, clickmap:true, ecommerce:"dataLayer", accurateTrackBounce:true, trackLinks:true});-->
-    <!--    </script>-->
-    <!--    <noscript>-->
-    <!--        <div><img src="https://mc.yandex.ru/watch/105454616" style="position:absolute; left:-9999px;" alt=""/></div>-->
-    <!--    </noscript>-->
+        ym(105539666, 'init', {ssr:true, webvisor:true, clickmap:true, ecommerce:"dataLayer", accurateTrackBounce:true, trackLinks:true});
+    </script>
+    <noscript>
+        <div><img src="https://mc.yandex.ru/watch/105539666" style="position:absolute; left:-9999px;" alt=""/></div>
+    </noscript>
+
 
     <script>
         tailwind.config = {
@@ -277,6 +278,13 @@
                    class="text-gray-600 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium">
                     <i class="fas fa-user-cog"></i>
                 </a>
+                {% if session.get('is_admin') %}
+                <a href="{{ url_for('admin_dashboard') }}"
+                   class="text-gray-600 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium"
+                   title="Админка">
+                    <i class="fas fa-shield-alt"></i>
+                </a>
+                {% endif %}
                 <a href="{{ url_for('logout') }}"
                    class="text-gray-600 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium">
                     <i class="fas fa-sign-out-alt"></i>

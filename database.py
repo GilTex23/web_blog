@@ -15,7 +15,8 @@ def init_db():
             password_hash TEXT NOT NULL,
             email TEXT UNIQUE NOT NULL,
             avatar TEXT DEFAULT 'default.png',
-            timezone_offset INTEGER DEFAULT 3
+            timezone_offset INTEGER DEFAULT 3,
+            is_admin BOOLEAN DEFAULT 0
         )
     ''')
 

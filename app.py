@@ -1,3 +1,5 @@
+# app.py
+
 import time
 from flask import Flask, render_template, request, redirect, url_for, session, flash
 from werkzeug.security import check_password_hash, generate_password_hash
@@ -101,7 +103,7 @@ def format_datetime(dt_str, timezone_offset=3):
 
 
 def escape_code_html(text):
-    """Экранирует HTML-символы только для блоков кода"""
+    """Экранирует HTML-символы для блоков кода"""
     if text is None:
         return ''
     return (text
